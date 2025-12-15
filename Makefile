@@ -45,4 +45,5 @@ check: lint test
 clean:
 	uv run python -c "import shutil, os, sys; \
 	[shutil.rmtree(p, ignore_errors=True) for p in ['.pytest_cache','.mypy_cache','.ruff_cache','htmlcov','build','dist','site']]; \
-	[os.remove(f) for f in ['.coverage'] if os.path.exists(f)]"
+	[os.remove(f) for f in ['.coverage'] if os.path.exists(f)]; \
+	[shutil.rmtree(os.path.join(root, d), ignore_errors=True) for root, dirs, files in os.walk('.') for d in dirs if d == '__pycache__']"
