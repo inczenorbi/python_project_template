@@ -70,7 +70,13 @@ wheels = [
 [[package]]
 name = "python-project-template"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
+
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -85,6 +91,11 @@ test = [
 ]
 
 [package.metadata]
+requires-dist = [
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.2" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.13.2" },
+]
+provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [

@@ -1,6 +1,5 @@
 .PHONY: help install precommit lint format test cov check clean
 
-
 help:
 	@echo "Common targets:"
 	@echo " install - Install package and dev deps with uv"

@@ -1,5 +1,4 @@
 """A tiny manual test script for the package interfaces.
-
 Run this module to perform simple, human-readable checks of the project's
 public interfaces (keeps things minimal and dependency-free).
 
@@ -9,7 +8,6 @@ or:
     python src/python_project_template/main.py
 """
 
-from __future__ import annotations
 
 from python_project_template.utils.basic_ops import BasicOperations
 
@@ -17,7 +15,6 @@ from python_project_template.utils.basic_ops import BasicOperations
 def run_manual_tests() -> None:
     """Run a few simple sanity checks and print results."""
     calc = BasicOperations()
-
     print("Running manual checks for BasicOperations...")
     print("add(1, 2) ->", calc.add(1, 2))
     print("subtract(5, 3) ->", calc.subtract(5, 3))

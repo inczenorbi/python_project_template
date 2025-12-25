@@ -1,5 +1,6 @@
-from python_project_template.utils.basic_ops import BasicOperations
 import pytest
+
+from python_project_template.utils.basic_ops import BasicOperations
 
 
 def test_add_subtract_multiply():

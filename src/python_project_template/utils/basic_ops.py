@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Iterable, List
-
 
 class BasicOperations:
     """A tiny example class providing a few basic numeric operations.
@@ -39,13 +37,13 @@ class BasicOperations:
             raise ZeroDivisionError("Division by zero")
         return float(a) / b_f
 
-    def mean(self, values: Iterable[float]) -> float:
+    def mean(self, values: list[float]) -> float:
         """Return the arithmetic mean of a sequence of numbers.
 
         Raises:
             ValueError: if `values` is empty.
         """
-        vals: List[float] = [float(v) for v in values]
+        vals: list[float] = [float(v) for v in values]
         if not vals:
             raise ValueError("mean() requires at least one value")
         return sum(vals) / len(vals)
