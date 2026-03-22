@@ -1,4 +1,5 @@
-"""Configuration loader supporting environment variables, .env files, and defaults.
+"""Configuration loader supporting environment variables, .env files, and
+defaults.
 
 Configuration is loaded once on startup in priority order:
 1. Environment variables
@@ -83,4 +84,3 @@ def get_config() -> AppConfig:
     if config is None:
         config = AppConfig.from_env()
     return config
-

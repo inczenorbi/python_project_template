@@ -1,4 +1,7 @@
-"""[TEMPLATE] Example tests. Delete and replace with tests for your own code."""
+"""[TEMPLATE] Example tests.
+
+Delete and replace with tests for your own code.
+"""
 
 import pytest
 

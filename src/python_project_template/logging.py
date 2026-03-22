@@ -68,16 +68,14 @@ class _PlainFormatter(logging.Formatter):
         Returns:
             Formatted log message.
         """
-        return (
-            f"[{record.levelname:8s}] {record.name:25s} | "
-            f"{record.getMessage()}"
-        )
+        return f"[{record.levelname:8s}] {record.name:25s} | {record.getMessage()}"
 
 
 class _JSONFormatter(logging.Formatter):
     """JSON formatter for structured logging.
 
-    Outputs logs as single-line JSON for easy parsing by log aggregation systems.
+    Outputs logs as single-line JSON for easy parsing by log aggregation
+    systems.
     """
 
     def format(self, record: logging.LogRecord) -> str:
@@ -102,33 +100,29 @@ class _JSONFormatter(logging.Formatter):
 
         # Add any extra fields from the record
         for key, value in record.__dict__.items():
-            if (
-                key not in (
-                    "name",
-                    "msg",
-                    "args",
-                    "created",
-                    "levelname",
-                    "levelno",
-                    "pathname",
-                    "filename",
-                    "module",
-                    "lineno",
-                    "funcName",
-                    "process",
-                    "processName",
-                    "thread",
-                    "threadName",
-                    "exc_info",
-                    "exc_text",
-                    "stack_info",
-                    "relativeCreated",
-                    "getMessage",
-                    "message",
-                )
-                and not key.startswith("_")
-            ):
+            if key not in (
+                "name",
+                "msg",
+                "args",
+                "created",
+                "levelname",
+                "levelno",
+                "pathname",
+                "filename",
+                "module",
+                "lineno",
+                "funcName",
+                "process",
+                "processName",
+                "thread",
+                "threadName",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "relativeCreated",
+                "getMessage",
+                "message",
+            ) and not key.startswith("_"):
                 log_obj[key] = value
 
         return json.dumps(log_obj)
-

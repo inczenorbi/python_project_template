@@ -1,4 +1,5 @@
-"""[TEMPLATE] Example CLI using Typer. Edit or delete this file to match your project.
+"""[TEMPLATE] Example CLI using Typer. Edit or delete this file to match your
+project.
 
 Command-line interface for the project using Typer.
 Provides CLI commands for calculations and diagnostics with structured logging and config support.
@@ -6,7 +7,7 @@ Provides CLI commands for calculations and diagnostics with structured logging a
 Usage:
     python-project-template calculate --help
     python-project-template diagnose
-    
+
 Environment variables:
     DEBUG=1              Enable debug logging
     LOG_FORMAT=json      Use JSON structured logs (default: plain)
@@ -35,9 +36,7 @@ logger = setup_logging(
 
 @app.command()
 def calculate(
-    operation: str = typer.Argument(
-        ..., help="Operation: add, subtract, multiply, divide, power"
-    ),
+    operation: str = typer.Argument(..., help="Operation: add, subtract, multiply, divide, power"),
     a: float = typer.Argument(..., help="First operand"),
     b: float | None = typer.Argument(None, help="Second operand (optional)"),
 ) -> None:
@@ -92,7 +91,8 @@ def calculate(
 def diagnose() -> None:
     """Display diagnostic information about the environment and configuration.
 
-    Shows current configuration values, logging setup, and environment details.
+    Shows current configuration values, logging setup, and environment
+    details.
     """
     config = get_config()
     logger = setup_logging(
@@ -152,4 +152,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
