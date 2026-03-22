@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 
-class BasicOperations:
+class BasicOperations:  # [TEMPLATE] Delete this example class and write your own
     """A tiny example class providing a few basic numeric operations.
 
     This is intentionally small and dependency-free so you can copy it into
     other projects as a starting point. Methods accept ints/floats and lists
     of numbers where it makes sense.
+
+    **This is example code.** Delete this file and replace its usage in tests
+    and main.py with your own business logic.
 
     Usage:
         calc = BasicOperations()
@@ -50,4 +53,5 @@ class BasicOperations:
 
     def power(self, a: float, exponent: float) -> float:
         """Return a raised to the given exponent."""
-        return float(a) ** float(exponent)
+        result = float(a) ** float(exponent)
+        return float(result)

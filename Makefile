@@ -1,4 +1,4 @@
-.PHONY: help install precommit lint format test cov check clean
+.PHONY: help install precommit lint format test type-check cov check clean version
 
 help:
 	@echo "Common targets:"
@@ -7,8 +7,10 @@ help:
 	@echo " lint - Run ruff lint"
 	@echo " format - Run ruff format + docformatter"
 	@echo " test - Run pytest"
-	@echo " cov - Run pytest with coverage"
-	@echo " check - Lint + tests"
+	@echo " type-check - Run mypy type checker"
+	@echo " cov - Run pytest with coverage report"
+	@echo " check - Lint + type-check + tests"
+	@echo " version - Show current version"
 	@echo " clean - Remove build/test artifacts"
 
 
@@ -34,11 +36,20 @@ test:
 	uv run -m pytest
 
 
+type-check:
+	uv run mypy src tests
+
+
 cov:
-	uv run -m pytest --cov=python_project_template --cov-report=term-missing
+	uv run -m pytest --cov=src/python_project_template --cov-report=term-missing --cov-report=html
+	@echo "Coverage HTML report generated: htmlcov/index.html"
 
 
-check: lint test
+check: lint type-check test
+
+
+version:
+	@uv run python -c "from python_project_template import __version__; print(__version__)"
 
 
 clean:

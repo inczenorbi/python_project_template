@@ -1,3 +1,5 @@
+"""[TEMPLATE] Example tests. Delete and replace with tests for your own code."""
+
 import pytest
 
 from python_project_template.utils.basic_ops import BasicOperations

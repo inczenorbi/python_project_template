@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Sync dependencies
+        run: uv sync --all-groups
+
+      - name: Run quality checks
+        run: make check
+
+      - name: Build distribution
+        run: uv build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload to PyPI (optional)
+        run: |
+          echo "To publish to PyPI, add a repository secret 'PYPI_API_TOKEN'"
+          echo "Then uncomment the publish step below"
+          # uv publish --token ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Notify Release
+        run: |
+          echo "Released version ${{ github.ref }} 🎉"
