@@ -107,6 +107,7 @@ Review and customize if needed:
 - [ ] `ruff.toml` — Linting and formatting rules
 - [ ] `pyproject.toml` — Mypy, coverage, and bandit configurations
 - [ ] `.pre-commit-config.yaml` — Git hooks
+- [ ] Add `ty` to your codebase and configure type checking if you want to enforce types
 
 ## 8. Repository Setup
 

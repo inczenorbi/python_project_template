@@ -91,6 +91,48 @@ python-project-template --help          # Show all commands
 python-project-template calculate --help  # Help for specific command
 ```
 
+## Documentation
+
+### Building Documentation Locally
+
+The project uses MkDocs with Material theme for documentation.
+
+**Setup:** MkDocs is installed with `make install` (included in the `docs` dependency group).
+
+**Build the docs:**
+```bash
+make docs
+# or directly:
+cd docs && mkdocs build --strict --site-dir ../site
+```
+
+Generated HTML will be in `site/index.html`.
+
+**Serve docs locally (live reload):**
+```bash
+make docs-serve
+# or directly:
+cd docs && mkdocs serve
+```
+
+Then visit `http://127.0.0.1:8000` in your browser.
+
+### Customizing Docs
+
+1. Edit Markdown files in `docs/`:
+   - `docs/index.md` — Landing page
+   - `docs/usage.md` — Usage guide (this file)
+   - `docs/mkdocs.yml` — MkDocs configuration (theme, navigation)
+
+2. Add new pages:
+   ```yaml
+   # docs/mkdocs.yml
+   nav:
+     - Home: index.md
+     - Usage: usage.md
+     - MyNewPage: my-new-page.md
+   ```
+
 ## Using as a Library
 
 Import and use the business logic directly in your code:

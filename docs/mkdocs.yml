@@ -1,7 +1,8 @@
 site_name: python-project-template
 
 theme:
-  name: mkdocs
+  name: material
 
 nav:
   - Home: index.md
+  - Usage: usage.md

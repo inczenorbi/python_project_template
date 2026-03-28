@@ -25,7 +25,8 @@ packages = ["src/python_project_template"]
 dev = [
     {include-group = "lint"},
     {include-group = "test"},
-    {include-group = "type"}
+    {include-group = "type"},
+    {include-group = "docs"}
 ]
 lint = [
     "ruff>=0.13.2",
@@ -38,6 +39,10 @@ test = [
 ]
 type = [
     "mypy>=1.8.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.0.0",
 ]
 
 [tool.mypy]

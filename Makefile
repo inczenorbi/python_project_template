@@ -1,4 +1,4 @@
-.PHONY: help install precommit lint format test type-check cov check clean version
+.PHONY: help install precommit lint format test type-check cov check clean version docs docs-serve
 
 help:
 	@echo "Common targets:"
@@ -10,6 +10,8 @@ help:
 	@echo " type-check - Run mypy type checker"
 	@echo " cov - Run pytest with coverage report"
 	@echo " check - Lint + type-check + tests"
+	@echo " docs - Build MkDocs documentation (generates site/)"
+	@echo " docs-serve - Serve MkDocs locally (http://127.0.0.1:8000)"
 	@echo " version - Show current version"
 	@echo " clean - Remove build/test artifacts"
 
@@ -46,6 +48,15 @@ cov:
 
 
 check: lint type-check test
+
+
+docs:
+	cd docs && mkdocs build --strict --site-dir ../site
+	@echo "Documentation built: site/index.html"
+
+
+docs-serve:
+	cd docs && mkdocs serve
 
 
 version:
