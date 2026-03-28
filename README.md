@@ -160,10 +160,10 @@ open htmlcov/index.html  # View coverage report
 ### Type checking
 
 ```bash
-make type-check    # Run mypy on src/ and tests/
+make type-check    # Run ty on src/ and tests/
 ```
 
-- Mypy config: `pyproject.toml [tool.mypy]`
+- Ty config: `pyproject.toml [tool.ty]`
 - Ignores are documented inline in source files
 
 ## Quality Gates
@@ -189,7 +189,7 @@ make install       # Install package + dev deps
 make lint          # Run ruff linter
 make format        # Run ruff formatter + docformatter
 make test          # Run pytest
-make type-check    # Run mypy
+make type-check    # Run ty
 make cov           # Run pytest with coverage
 make check         # Comprehensive validation (lint + type + test)
 make clean         # Remove build/test artifacts

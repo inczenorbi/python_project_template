@@ -7,7 +7,7 @@ help:
 	@echo " lint - Run ruff lint"
 	@echo " format - Run ruff format + docformatter"
 	@echo " test - Run pytest"
-	@echo " type-check - Run mypy type checker"
+	@echo " type-check - Run ty type checker"
 	@echo " cov - Run pytest with coverage report"
 	@echo " check - Lint + type-check + tests"
 	@echo " docs - Build MkDocs documentation (generates site/)"
@@ -39,7 +39,7 @@ test:
 
 
 type-check:
-	uv run mypy src tests
+	uv run ty check src tests
 
 
 cov:
@@ -65,6 +65,6 @@ version:
 
 clean:
 	uv run python -c "import shutil, os, sys; \
-	[shutil.rmtree(p, ignore_errors=True) for p in ['.pytest_cache','.mypy_cache','.ruff_cache','htmlcov','build','dist','site']]; \
+	[shutil.rmtree(p, ignore_errors=True) for p in ['.pytest_cache','.ruff_cache','htmlcov','build','dist','site']]; \
 	[os.remove(f) for f in ['.coverage'] if os.path.exists(f)]; \
 	[shutil.rmtree(os.path.join(root, d), ignore_errors=True) for root, dirs, files in os.walk('.') for d in dirs if d == '__pycache__']"

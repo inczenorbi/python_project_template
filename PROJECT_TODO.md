@@ -33,7 +33,7 @@ This document tracks what is already in place and what remains to make this temp
 - Build matrix validation (Linux/Windows/macOS, Python 3.11-3.13) in CI.
 
 ### Code quality and typing
-- Introduce strict type checking (mypy or pyright) with config and Makefile target.
+- Tighten `ty` rules and keep type checking enforced through the Makefile and CI.
 - Enforce docstring style (pydocstyle) and formatting (docformatter) with pre-commit hooks.
 - Add safety checks: `pip-audit`/`pipdeptree` or `uvx safety`, `bandit` for security linting.
 - Configure import sorting (already via ruff) with per-module allowlists if needed.

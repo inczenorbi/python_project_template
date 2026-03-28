@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI Interface**: Typer-based command-line interface with `calculate`, `diagnose`, and `demo` commands
 - **Utilities**: BasicOperations class with mathematical operations (add, subtract, multiply, divide, power, mean)
 - **Testing**: Comprehensive test suite with pytest and coverage reporting (80%+ coverage requirement)
-- **Type Safety**: Mypy strict mode enforced across codebase
+- **Type Safety**: Ty type checking enforced across codebase
 - **CI/CD**: GitHub Actions workflows for linting, testing, type checking, and coverage validation
 - **Documentation**: Architecture overview, usage guide, and Architecture Decision Records (ADRs)
 - **Pre-commit Hooks**: Ruff and Bandit hooks for code quality and security

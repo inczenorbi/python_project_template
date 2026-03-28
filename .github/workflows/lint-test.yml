@@ -26,7 +26,7 @@ jobs:
         run: uv run ruff check .
 
   type-check:
-    name: Type Check (Mypy)
+    name: Type Check (ty)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,8 +38,8 @@ jobs:
           python-version-file: ".python-version"
       - name: Sync all dependencies
         run: uv sync --all-groups
-      - name: Run mypy type checker
-        run: uv run mypy src tests
+      - name: Run ty type checker
+        run: uv run ty check src tests
 
   test:
     name: Test (Python ${{ matrix.python-version }} on ${{ matrix.os }})

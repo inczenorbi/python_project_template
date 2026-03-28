@@ -4,130 +4,123 @@ This template has been set up with overengineered best practices for production 
 
 ## Before You Start
 
-- [ ] Create a new GitHub repository from this template (or clone and customize)
+- [ ] Create a new GitHub repository from this template, or clone and customize it
 - [ ] Decide on your project name and update it consistently
 
-## 1. Project Metadata (Required)
+## 1. Project Metadata
 
-- [ ] Update `pyproject.toml`:
-  - [ ] `name` — Your project name (e.g., `my-awesome-project`)
-  - [ ] `description` — What your project does
-  - [ ] `requires-python` — Minimum Python version (currently `>=3.11`)
-  - [ ] Add your name and email under `[project]` if needed
+- [ ] Update `pyproject.toml`
+  - [ ] Set `name` to your project name (for example, `my-awesome-project`)
+  - [ ] Set `description` to what your project does
+  - [ ] Confirm `requires-python` matches your supported version range
+  - [ ] Add author information under `[project]` if needed
+- [ ] Rename `src/python_project_template/`
+  - [ ] Rename it to match your project name
+  - [ ] Update imports throughout the codebase
+- [ ] Update `.python-version` if needed
+  - [ ] The current pin is `3.11`
 
-- [ ] Update `src/python_project_template/` folder:
-  - [ ] Rename to match your project name (e.g., `src/my_awesome_project/`)
-  - [ ] Update all imports in code
+## 2. Example Code
 
-- [ ] Update `.python-version` if needed:
-  - [ ] Current pin is 3.11; adjust if your project targets different versions
+### Option A: Keep and Adapt the Example Code
 
-## 2. Example Code (Choose One Approach)
-
-### Option A: Keep and Adapt Example Code
-- [ ] Rename `src/python_project_template/utils/basic_ops.py` to your domain
-- [ ] Replace the `BasicOperations` class with your actual business logic
+- [ ] Rename `src/python_project_template/utils/basic_ops.py` to match your domain
+- [ ] Replace `BasicOperations` with your actual business logic
 - [ ] Update `tests/test_basic_ops.py` to test your code
-- [ ] Update `main.py` to use your logic instead of the calculator example
+- [ ] Update `main.py` to use your own logic instead of the calculator example
 
-### Option B: Delete Example Code Entirely
+### Option B: Delete the Example Code
+
 ```bash
 rm src/python_project_template/utils/basic_ops.py
 rm tests/test_basic_ops.py
 # Clear or remove main.py
 ```
-- [ ] Delete the files listed above
+
+- [ ] Delete the example files
 - [ ] Remove example imports from `__init__.py` and other modules
-- [ ] Update `main.py` to provide your own entry point (or delete if not needed)
+- [ ] Update `main.py` to provide your own entry point, or delete it if you do not need one
 
-## 3. Configuration & Logging
+## 3. Configuration and Logging
 
-- [ ] Review `src/python_project_template/config.py` — adjust settings for your needs
-- [ ] Review `src/python_project_template/logging.py` — customize if needed
+- [ ] Review `src/python_project_template/config.py` and adjust settings for your needs
+- [ ] Review `src/python_project_template/logging.py` and customize it if needed
 - [ ] Update `.env.example` with your configuration options
 
 ## 4. Documentation
 
-- [ ] Update `README.md`:
-  - [ ] Replace project description with yours
-  - [ ] Update quickstart examples
+- [ ] Update `README.md`
+  - [ ] Replace the project description
+  - [ ] Update quick-start examples
   - [ ] Update features and architecture sections
-  - [ ] Update development/testing instructions
-  - [ ] Remove "Using This Template" section once you've customized
-
-- [ ] Update `docs/index.md`:
+  - [ ] Update development and testing instructions
+  - [ ] Remove the "Using This Template" section once you are done customizing
+- [ ] Update `docs/index.md`
   - [ ] Write your project's landing page
-
-- [ ] Update `docs/architecture.md`:
-  - [ ] Replace system architecture diagram with yours
+- [ ] Update `docs/architecture.md`
+  - [ ] Replace the system architecture diagram
   - [ ] Update module descriptions
   - [ ] Document your design decisions
-
-- [ ] Update `docs/usage.md`:
-  - [ ] Replace with usage examples for your project
-
-- [ ] Architecture Decision Records (ADRs):
-  - [ ] Delete example ADRs in `docs/adr/`
+- [ ] Update `docs/usage.md`
+  - [ ] Replace it with usage examples for your project
+- [ ] Review Architecture Decision Records in `docs/adr/`
+  - [ ] Delete example ADRs
   - [ ] Add your own ADRs as you make important decisions
-
-- [ ] Update `CONTRIBUTING.md`:
+- [ ] Update `CONTRIBUTING.md`
   - [ ] Customize development workflow guidance
   - [ ] Adjust standards for your team
   - [ ] Keep or remove the release process section based on your publishing strategy
 
 ## 5. CI/CD Configuration
 
-- [ ] Review `.github/workflows/lint-test.yml`:
-  - [ ] Adjust Python version matrix if needed (currently 3.11, 3.12, 3.13)
-  - [ ] Adjust OS matrix if needed (currently Ubuntu, Windows, macOS)
-  - [ ] Modify coverage threshold if needed (currently 80%)
+- [ ] Review `.github/workflows/lint-test.yml`
+  - [ ] Adjust the Python version matrix if needed
+  - [ ] Adjust the OS matrix if needed
+  - [ ] Modify the coverage threshold if needed
+- [ ] Review `.github/workflows/docs-build.yml`
+  - [ ] Verify the MkDocs build strategy
+- [ ] Review `.github/workflows/release.yml`
+  - [ ] If publishing to PyPI, add the `PYPI_API_TOKEN` secret and enable the publish step
+  - [ ] If not publishing, delete the workflow or keep it only for GitHub Releases
+  - [ ] Configure branch protection rules in GitHub
 
-- [ ] Review `.github/workflows/docs-build.yml`:
-  - [ ] Verify MkDocs build strategy
+## 6. Version Control and Releases
 
-- [ ] `.github/workflows/release.yml`:
-  - [ ] **If you're publishing to PyPI**: Set up `PYPI_API_TOKEN` secret in GitHub and uncomment the publish step
-  - [ ] **If you're not publishing**: Delete this workflow or just use it for GitHub Releases
-  - [ ] Configure branch protection rules in GitHub (Settings → Branches → Add Rule)
-
-## 6. Version Control & Releases
-
-- [ ] Choose versioning strategy:
-  - [ ] Use `bumpversion` for semantic versioning (configured in `pyproject.toml`)
+- [ ] Choose a versioning strategy
+  - [ ] Use `bumpversion` for semantic versioning
   - [ ] Or manage versions manually
-  - [ ] Or remove version management entirely if not needed
-
-- [ ] Update `CHANGELOG.md`:
-  - [ ] Delete example entries
+  - [ ] Or remove version management entirely if you do not need it
+- [ ] Update `CHANGELOG.md`
+  - [ ] Delete the example entries
   - [ ] Start fresh with your first release
 
 ## 7. Code Quality Tools
 
-Review and customize if needed:
-- [ ] `ruff.toml` — Linting and formatting rules
-- [ ] `pyproject.toml` — Mypy, coverage, and bandit configurations
-- [ ] `.pre-commit-config.yaml` — Git hooks
-- [ ] Add `ty` to your codebase and configure type checking if you want to enforce types
+Review and customize these files if needed:
+
+- [ ] `ruff.toml` for linting and formatting rules
+- [ ] `pyproject.toml` for `ty`, coverage, and Bandit configuration
+- [ ] `.pre-commit-config.yaml` for git hooks
+- [ ] Adjust `ty` configuration to match your team's type-checking standards
 
 ## 8. Repository Setup
 
 - [ ] Create a `.github/CODEOWNERS` file for your team
-- [ ] Set up branch protection rules:
-  - [ ] Require PR reviews
+- [ ] Set up branch protection rules
+  - [ ] Require pull request reviews
   - [ ] Require status checks to pass
-  - [ ] Restrict who can push to main
-
-- [ ] Update issue/PR templates in `.github/`:
-  - [ ] Create `.github/ISSUE_TEMPLATE/` directory
+  - [ ] Restrict who can push to `main`
+- [ ] Add issue and pull request templates
+  - [ ] Create `.github/ISSUE_TEMPLATE/`
   - [ ] Create `.github/PULL_REQUEST_TEMPLATE.md`
 
-## 9. Optional: Advanced Setup
+## 9. Optional Advanced Setup
 
-- [ ] **Dockerfile** — Add if deploying in containers
-- [ ] **Devcontainer** — Add `.devcontainer/devcontainer.json` for VS Code remote dev
-- [ ] **Publishing** — Set up PyPI/TestPyPI publishing if distributing as a library
-- [ ] **API Documentation** — Add mkdocstrings plugin for auto-generated API docs
-- [ ] **Performance Benchmarks** — Add pytest-benchmark for performance testing
+- [ ] Add a `Dockerfile` if you deploy in containers
+- [ ] Add a devcontainer if your team uses VS Code remote development
+- [ ] Set up PyPI or TestPyPI publishing if you distribute the project
+- [ ] Add API documentation generation such as `mkdocstrings`
+- [ ] Add performance benchmarking such as `pytest-benchmark`
 
 ## 10. Final Steps
 
@@ -135,38 +128,38 @@ Review and customize if needed:
 - [ ] Commit your changes: `git add . && git commit -m "Customize template for my-project"`
 - [ ] Push to GitHub: `git push origin main`
 - [ ] Verify CI/CD workflows pass on GitHub
-- [ ] Add your first feature! 🚀
+- [ ] Add your first real feature
 
----
+## After Customization
 
-## After Customization: What You Have
+You should have a production-ready Python project with:
 
-A production-ready Python project with:
-- ✅ Type-safe code (mypy strict mode)
-- ✅ Structured logging (JSON + plain text)
-- ✅ Configuration management (env/.env/defaults)
-- ✅ Comprehensive testing (pytest, 80%+ coverage)
-- ✅ Cross-platform CI/CD (GitHub Actions)
-- ✅ Security scanning (Bandit)
-- ✅ Code quality enforcement (Ruff, type checking)
-- ✅ Professional documentation (MkDocs, ADRs)
-- ✅ Version management (Bumpversion)
+- [ ] Type-safe code checked with `ty`
+- [ ] Structured logging
+- [ ] Configuration management
+- [ ] Comprehensive testing with coverage
+- [ ] Cross-platform CI/CD
+- [ ] Security scanning
+- [ ] Code quality enforcement with Ruff and `ty`
+- [ ] Professional documentation
+- [ ] Version management
 
 ## Troubleshooting
 
 ### I deleted example code but tests still fail
+
 - Delete `tests/test_basic_ops.py`
 - Update `tests/` with your own tests
 
 ### I renamed my package but imports are broken
-- Update all imports in code to use new package name
-- Run `make check` to find any remaining references
+
+- Update imports throughout the codebase
+- Run `make check` to find remaining references
 
 ### My CI/CD workflows are failing
-- Check GitHub Actions logs (Actions tab in your repo)
+
+- Check GitHub Actions logs
 - Verify Python version and dependency installation
-- Run `make check` locally first to debug
+- Run `make check` locally first
 
----
-
-**Questions?** Refer to the [Architecture Overview](docs/architecture.md) and [Development Guide](CONTRIBUTING.md) for more details.
+For more detail, see `docs/architecture.md` and `CONTRIBUTING.md`.
