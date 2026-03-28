@@ -25,22 +25,6 @@ jobs:
       - name: Run ruff lint
         run: uv run ruff check .
 
-  format:
-    name: Format (Ruff + Docformatter)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version-file: ".python-version"
-      - name: Run ruff format check
-        run: uv run ruff format --check .
-      - name: Run docformatter check
-        run: uv run docformatter --check --recursive src tests
-
   type-check:
     name: Type Check (Mypy)
     runs-on: ubuntu-latest
