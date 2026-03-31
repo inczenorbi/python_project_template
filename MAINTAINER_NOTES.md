@@ -1,6 +1,6 @@
 # Ralph Loop CLI - Maintainer Notes
 
-This repository now ships a real CLI for autonomous project planning and prompt-pack generation.
+This repository now ships a real CLI for autonomous project planning and Codex-backed task execution.
 
 ## What the Repo Provides
 
@@ -21,7 +21,8 @@ Each run executes these phases:
 2. `decompose`
 3. `refine`
 4. `prompt_pack`
-5. `summarize`
+5. `implement`
+6. `summarize`
 
 The engine enforces:
 
@@ -30,6 +31,7 @@ The engine enforces:
 - valid task dependencies
 - full requirement coverage
 - one prompt artifact per task
+- one execution artifact per executed task
 
 ## Key Files
 
@@ -53,12 +55,13 @@ Each Ralph run writes:
 - `summary.md`
 - `event-log.jsonl`
 - `prompts/*.md`
+- `executions/*.md`
 
 Failed runs should still leave partial artifacts behind.
 
 ## Provider Expectations
 
-The default backend is Codex CLI.
+The default backend is Codex CLI and it is the only backend that executes workspace changes.
 
 Primary env vars:
 
@@ -74,7 +77,7 @@ Optional shared env vars:
 - `RALPH_MAX_ITERATIONS`
 - `RALPH_OUTPUT_DIR`
 
-OpenAI HTTP remains an explicit fallback:
+OpenAI HTTP remains an explicit planning-only fallback:
 
 - `RALPH_PROVIDER=openai`
 - `RALPH_API_BASE_URL`
@@ -87,6 +90,6 @@ When changing the Ralph flow:
 
 1. Keep phase outputs JSON-only and validation-driven.
 2. Preserve artifact persistence on failure.
-3. Update README and `docs/usage.md` when CLI flags or output files change.
+3. Update README and `docs/usage.md` when CLI flags, execution behavior, or output files change.
 4. Keep `tests/` aligned with prompt schemas and validation rules.
 5. Run `make test` and `make type-check`.

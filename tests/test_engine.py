@@ -9,7 +9,7 @@ from typing import cast
 
 import pytest
 
-from python_project_template.ralph.config import RalphConfig
+from python_project_template.ralph.config import RalphConfig, RalphConfigurationError
 from python_project_template.ralph.engine import IterationLimitError, RalphEngine, _atomicity_issues
 from python_project_template.ralph.models import (
     PromptArtifact,
@@ -19,6 +19,7 @@ from python_project_template.ralph.models import (
     TaskCriterion,
 )
 from tests.fakes import (
+    PlanningOnlyProvider,
     SequencedProvider,
     refinement_needed_responses,
     stuck_refinement_responses,
@@ -92,6 +93,7 @@ def _seed_failed_session(session_dir: Path, *, include_first_prompt: bool = Fals
         requirements=requirements,
         tasks=tasks,
         prompt_artifacts=prompt_artifacts,
+        execution_artifacts=[],
         learnings=[str(item) for item in cast(list[str], discover_payload["learnings"])],
         execution_order=[
             str(item) for item in cast(list[str], decompose_payload["execution_order"])
@@ -130,12 +132,15 @@ def test_engine_refines_and_persists_artifacts(tmp_path: Path) -> None:
     assert (run_dir / "backlog.json").exists()
     assert (run_dir / "event-log.jsonl").exists()
     prompt_files = sorted((run_dir / "prompts").glob("*.md"))
+    execution_files = sorted((run_dir / "executions").glob("*.md"))
     assert len(prompt_files) == 2
+    assert len(execution_files) == 2
 
     backlog = json.loads((run_dir / "backlog.json").read_text(encoding="utf-8"))
     assert [task["id"] for task in backlog["tasks"]] == ["TASK-1", "TASK-2"]
     events = (run_dir / "event-log.jsonl").read_text(encoding="utf-8")
     assert '"phase": "refine"' in events
+    assert '"phase": "implement"' in events
 
 
 def test_engine_writes_failure_artifacts_on_iteration_cap(tmp_path: Path) -> None:
@@ -182,6 +187,7 @@ def test_engine_resume_continues_from_saved_session(tmp_path: Path) -> None:
         provider=SequencedProvider(
             {
                 "prompt_pack": responses["prompt_pack"],
+                "implement": responses["implement"],
                 "summarize": responses["summarize"],
             }
         ),
@@ -193,6 +199,7 @@ def test_engine_resume_continues_from_saved_session(tmp_path: Path) -> None:
 
     assert session.status == "completed"
     assert [artifact.task_id for artifact in session.prompt_artifacts] == ["TASK-1", "TASK-2"]
+    assert [artifact.task_id for artifact in session.execution_artifacts] == ["TASK-1", "TASK-2"]
     assert session.executive_summary
 
 
@@ -216,6 +223,7 @@ def test_engine_resume_reuses_existing_prompt_artifacts(tmp_path: Path) -> None:
                         "learnings": ["Completed the missing prompt only."],
                     }
                 ],
+                "implement": responses["implement"],
                 "summarize": responses["summarize"],
             }
         ),
@@ -227,3 +235,16 @@ def test_engine_resume_reuses_existing_prompt_artifacts(tmp_path: Path) -> None:
 
     assert session.status == "completed"
     assert [artifact.task_id for artifact in session.prompt_artifacts] == ["TASK-1", "TASK-2"]
+
+
+def test_engine_requires_executable_provider_for_task_execution(tmp_path: Path) -> None:
+    engine = RalphEngine(
+        provider=PlanningOnlyProvider(success_responses()),
+        config=_config(tmp_path / "runs"),
+        logger=_logger(),
+    )
+
+    with pytest.raises(RalphConfigurationError) as exc_info:
+        engine.run(goal="Plan a B2B dashboard")
+
+    assert "cannot execute implementation tasks" in str(exc_info.value)

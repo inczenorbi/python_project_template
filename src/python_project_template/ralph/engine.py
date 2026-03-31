@@ -9,8 +9,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from python_project_template.ralph.config import RalphConfig
+from python_project_template.ralph.config import RalphConfig, RalphConfigurationError
 from python_project_template.ralph.models import (
+    ExecutionArtifact,
     PromptArtifact,
     RalphSession,
     RalphTask,
@@ -20,6 +21,7 @@ from python_project_template.ralph.models import (
 from python_project_template.ralph.prompt_templates import (
     build_decompose_messages,
     build_discover_messages,
+    build_execute_messages,
     build_prompt_pack_messages,
     build_refine_messages,
     build_summarize_messages,
@@ -91,7 +93,9 @@ class _ArtifactStore:
     def __init__(self, root_dir: Path) -> None:
         self.root_dir = root_dir
         self.prompts_dir = self.root_dir / "prompts"
+        self.executions_dir = self.root_dir / "executions"
         self.prompts_dir.mkdir(parents=True, exist_ok=True)
+        self.executions_dir.mkdir(parents=True, exist_ok=True)
         self.events_path = self.root_dir / "event-log.jsonl"
 
     def write_brief(
@@ -169,6 +173,31 @@ class _ArtifactStore:
                 encoding="utf-8",
             )
 
+    def write_execution_reports(self, artifacts: list[ExecutionArtifact]) -> None:
+        for artifact in artifacts:
+            lines = [
+                f"# {artifact.title}",
+                "",
+                f"- Task ID: `{artifact.task_id}`",
+                "",
+                "## Summary",
+                artifact.summary,
+                "",
+                "## Changed Files",
+            ]
+            lines.extend(f"- `{path}`" for path in artifact.changed_files or ["No files reported."])
+            lines.extend(["", "## Tests Run"])
+            lines.extend(
+                f"- `{command}`" for command in artifact.tests_run or ["No tests reported."]
+            )
+            if artifact.notes:
+                lines.extend(["", "## Notes"])
+                lines.extend(f"- {note}" for note in artifact.notes)
+            (self.executions_dir / artifact.filename).write_text(
+                "\n".join(lines) + "\n",
+                encoding="utf-8",
+            )
+
     def write_summary(self, session: RalphSession) -> None:
         lines = [
             f"# {session.title or 'Ralph Summary'}",
@@ -185,6 +214,12 @@ class _ArtifactStore:
         lines.extend(
             f"- {note}" for note in session.handoff_notes or ["No handoff notes recorded."]
         )
+        if session.execution_artifacts:
+            lines.extend(["", "## Implemented Tasks"])
+            lines.extend(
+                f"- {artifact.task_id}: {artifact.summary}"
+                for artifact in session.execution_artifacts
+            )
         if session.failure_reason:
             lines.extend(["", "## Failure", session.failure_reason])
         (self.root_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -205,6 +240,7 @@ class RalphEngine:
         goal: str,
         constraints: str | None = None,
         context_files: list[Path] | None = None,
+        execute_tasks: bool = True,
     ) -> RalphSession:
         context_files = context_files or []
         context_documents = self._load_context_documents(context_files)
@@ -224,13 +260,14 @@ class RalphEngine:
                 session=session,
                 store=store,
                 context_documents=context_documents,
+                execute_tasks=execute_tasks,
             )
             return session
         except Exception as exc:
             self._fail_session(session=session, store=store, error=exc)
             raise
 
-    def resume(self, *, session_dir: Path) -> RalphSession:
+    def resume(self, *, session_dir: Path, execute_tasks: bool = True) -> RalphSession:
         session_path = session_dir / "session.json"
         if not session_path.exists():
             raise RalphEngineError(f"Session file not found: {session_path}")
@@ -261,6 +298,7 @@ class RalphEngine:
                 session=session,
                 store=store,
                 context_documents=context_documents,
+                execute_tasks=execute_tasks,
             )
             return session
         except Exception as exc:
@@ -311,6 +349,7 @@ class RalphEngine:
         session: RalphSession,
         store: _ArtifactStore,
         context_documents: list[dict[str, str]],
+        execute_tasks: bool,
     ) -> None:
         if not session.requirements or not session.title or not session.project_type:
             self._run_discover_phase(
@@ -322,6 +361,12 @@ class RalphEngine:
             self._run_decompose_phase(session=session, store=store)
         self._run_refine_loop(session=session, store=store)
         self._run_prompt_pack_loop(session=session, store=store)
+        if execute_tasks:
+            self._run_implementation_loop(
+                session=session,
+                store=store,
+                context_documents=context_documents,
+            )
         self._run_summarize_phase(session=session, store=store)
         session.status = "completed"
         session.completed_at = _utc_now()
@@ -527,6 +572,68 @@ class RalphEngine:
                 },
             )
 
+    def _run_implementation_loop(
+        self,
+        *,
+        session: RalphSession,
+        store: _ArtifactStore,
+        context_documents: list[dict[str, str]],
+    ) -> None:
+        if not self._provider.supports_task_execution():
+            raise RalphConfigurationError(
+                "Selected provider cannot execute implementation tasks. "
+                "Use the codex provider or rerun Ralph with --plan-only."
+            )
+
+        prompt_map = {artifact.task_id: artifact for artifact in session.prompt_artifacts}
+        reports = {artifact.task_id: artifact for artifact in session.execution_artifacts}
+        task_map = {task.id: task for task in session.tasks}
+        ordered_task_ids = self._ordered_task_ids(session)
+
+        for task_id in ordered_task_ids:
+            if task_id in reports:
+                continue
+
+            task = task_map[task_id]
+            if task_id not in prompt_map:
+                raise PhaseValidationError(f"Missing prompt artifact for task {task_id}.")
+
+            dependency_reports = [
+                reports[dependency] for dependency in task.dependencies if dependency in reports
+            ]
+            response = self._call_phase(
+                phase="implement",
+                messages=build_execute_messages(
+                    goal=session.goal,
+                    constraints=session.constraints,
+                    task=task,
+                    artifact=prompt_map[task_id],
+                    completed_dependencies=dependency_reports,
+                    context_documents=context_documents,
+                ),
+            )
+            report = self._parse_execution_artifact(
+                response=response,
+                task=task,
+            )
+            report.filename = self._execution_filename(task_id=task.id, tasks=session.tasks)
+            reports[task_id] = report
+            session.execution_artifacts = [
+                reports[ordered_id] for ordered_id in ordered_task_ids if ordered_id in reports
+            ]
+            store.write_execution_reports(session.execution_artifacts)
+            store.write_session(session)
+            store.append_event(
+                phase="implement",
+                status="ok",
+                message="Implemented task in workspace.",
+                payload={
+                    "task_id": task_id,
+                    "changed_files": len(report.changed_files),
+                    "tests_run": len(report.tests_run),
+                },
+            )
+
     def _run_summarize_phase(self, *, session: RalphSession, store: _ArtifactStore) -> None:
         response = self._call_phase(
             phase="summarize",
@@ -536,6 +643,7 @@ class RalphEngine:
                 requirements=session.requirements,
                 tasks=session.tasks,
                 artifacts=session.prompt_artifacts,
+                execution_artifacts=session.execution_artifacts,
                 learnings=session.learnings,
             ),
         )
@@ -699,6 +807,39 @@ class RalphEngine:
         )
         return artifacts, learnings
 
+    def _parse_execution_artifact(
+        self,
+        *,
+        response: str,
+        task: RalphTask,
+    ) -> ExecutionArtifact:
+        payload = self._parse_json_payload(response, phase="implement")
+        task_id = self._require_string(payload, "task_id", phase="implement")
+        if task_id != task.id:
+            raise PhaseValidationError(
+                f"implement returned task_id {task_id} but expected {task.id}."
+            )
+        title = self._require_string(payload, "title", phase="implement")
+        summary = self._require_string(payload, "summary", phase="implement")
+        return ExecutionArtifact(
+            task_id=task_id,
+            title=title,
+            filename="",
+            summary=summary,
+            changed_files=_ensure_list_of_strings(
+                payload.get("changed_files"),
+                field_name="implement.changed_files",
+            ),
+            tests_run=_ensure_list_of_strings(
+                payload.get("tests_run"),
+                field_name="implement.tests_run",
+            ),
+            notes=_ensure_list_of_strings(
+                payload.get("notes"),
+                field_name="implement.notes",
+            ),
+        )
+
     def _task_validation_issues(
         self,
         tasks: list[RalphTask],
@@ -724,8 +865,25 @@ class RalphEngine:
             raise PhaseValidationError(f"{phase}.{key} must be a non-empty string.")
         return value.strip()
 
+    def _ordered_task_ids(self, session: RalphSession) -> list[str]:
+        seen: set[str] = set()
+        ordered_ids: list[str] = []
+        for task_id in session.execution_order + [task.id for task in session.tasks]:
+            if task_id in seen:
+                continue
+            if any(task.id == task_id for task in session.tasks):
+                ordered_ids.append(task_id)
+                seen.add(task_id)
+        return ordered_ids
+
     def _artifact_filename(self, *, task_id: str, tasks: list[RalphTask]) -> str:
         for index, task in enumerate(tasks, start=1):
             if task.id == task_id:
                 return f"{index:02d}-{_slugify(task.title)}.md"
         raise PhaseValidationError(f"Unknown task id for prompt artifact filename: {task_id}")
+
+    def _execution_filename(self, *, task_id: str, tasks: list[RalphTask]) -> str:
+        for index, task in enumerate(tasks, start=1):
+            if task.id == task_id:
+                return f"{index:02d}-{_slugify(task.title)}-execution.md"
+        raise PhaseValidationError(f"Unknown task id for execution artifact filename: {task_id}")

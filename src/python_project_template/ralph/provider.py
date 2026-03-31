@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 # CodexCliProvider intentionally shells out to the local `codex exec` binary.
+import json
 import subprocess  # nosec B404
 import tempfile
 import time
@@ -23,6 +24,9 @@ class ProviderError(RuntimeError):
 
 class ChatProvider(Protocol):
     """Minimal provider interface used by the Ralph engine."""
+
+    def supports_task_execution(self) -> bool:
+        """Return whether the provider can modify the repository workspace."""
 
     def complete(
         self,
@@ -54,6 +58,9 @@ class CodexCliProvider:
         self._local_provider = local_provider
         self._run_fn = run_fn or subprocess.run
 
+    def supports_task_execution(self) -> bool:
+        return True
+
     def complete(
         self,
         *,
@@ -62,10 +69,11 @@ class CodexCliProvider:
         temperature: float,
     ) -> str:
         del temperature
-        prompt = self._build_prompt(messages)
+        phase = self._detect_phase(messages)
+        prompt = self._build_prompt(messages, phase=phase)
         with tempfile.TemporaryDirectory(prefix="ralph-codex-") as temp_dir:
             output_path = Path(temp_dir) / "last-message.txt"
-            command = self._build_command(output_path=output_path, model=model)
+            command = self._build_command(output_path=output_path, model=model, phase=phase)
             try:
                 result = self._run_fn(
                     command,
@@ -81,6 +89,11 @@ class CodexCliProvider:
                     "Install Codex CLI or set RALPH_CODEX_COMMAND."
                 ) from exc
             except subprocess.TimeoutExpired as exc:
+                if phase == "implement":
+                    raise ProviderError(
+                        "Codex CLI timed out while executing a Ralph implementation task. "
+                        f"Timeout: {self._timeout_seconds}s."
+                    ) from exc
                 raise ProviderError(
                     "Codex CLI timed out while generating a Ralph phase response. "
                     f"Timeout: {self._timeout_seconds}s."
@@ -92,6 +105,11 @@ class CodexCliProvider:
                     or self._decode_stream(result.stdout)
                     or "No error output."
                 )
+                if phase == "implement":
+                    raise ProviderError(
+                        "Codex CLI failed while executing a Ralph implementation task. "
+                        f"Command: {' '.join(command)}. Details: {details}"
+                    )
                 raise ProviderError(
                     "Codex CLI failed while generating a Ralph phase response. "
                     f"Command: {' '.join(command)}. Details: {details}"
@@ -105,7 +123,10 @@ class CodexCliProvider:
                 raise ProviderError("Codex CLI returned an empty final response.")
             return content
 
-    def _build_command(self, *, output_path: Path, model: str | None) -> list[str]:
+    def _build_command(
+        self, *, output_path: Path, model: str | None, phase: str | None
+    ) -> list[str]:
+        sandbox = "workspace-write" if phase == "implement" else "read-only"
         command = [
             self._codex_command,
             "exec",
@@ -113,7 +134,7 @@ class CodexCliProvider:
             "-C",
             str(self._working_dir),
             "--sandbox",
-            "read-only",
+            sandbox,
             "--color",
             "never",
             "--ephemeral",
@@ -129,16 +150,36 @@ class CodexCliProvider:
             command.extend(["--model", model])
         return command
 
-    def _build_prompt(self, messages: Sequence[ChatMessage]) -> str:
-        sections = [
-            "You are executing one Ralph planning phase.",
-            "Return only the final JSON object requested by the user message.",
-            "Do not wrap the JSON in markdown fences.",
-        ]
+    def _build_prompt(self, messages: Sequence[ChatMessage], *, phase: str | None) -> str:
+        if phase == "implement":
+            sections = [
+                "You are executing one Ralph implementation task in the current repository.",
+                "Apply the required code changes before producing your final answer.",
+                "Return only the final JSON object requested by the user message.",
+                "Do not wrap the JSON in markdown fences.",
+            ]
+        else:
+            sections = [
+                "You are executing one Ralph planning phase.",
+                "Return only the final JSON object requested by the user message.",
+                "Do not wrap the JSON in markdown fences.",
+            ]
         for message in messages:
             role_label = message.role.upper()
             sections.append(f"{role_label} MESSAGE:\n{message.content}")
         return "\n\n".join(sections)
+
+    def _detect_phase(self, messages: Sequence[ChatMessage]) -> str | None:
+        if not messages:
+            return None
+        try:
+            payload = json.loads(messages[-1].content)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(payload, dict):
+            return None
+        phase = payload.get("phase")
+        return phase if isinstance(phase, str) else None
 
     def _decode_stream(self, value: str | bytes | None) -> str:
         if value is None:
@@ -170,6 +211,9 @@ class OpenAICompatibleChatProvider:
         self._sleep_fn = sleep_fn or time.sleep
         self._transport = transport
 
+    def supports_task_execution(self) -> bool:
+        return False
+
     def complete(
         self,
         *,
@@ -177,6 +221,11 @@ class OpenAICompatibleChatProvider:
         model: str | None,
         temperature: float,
     ) -> str:
+        if self._detect_phase(messages) == "implement":
+            raise ProviderError(
+                "The openai provider can plan Ralph tasks but cannot execute code changes. "
+                "Use the codex provider or rerun Ralph with --plan-only."
+            )
         payload = {
             "model": model,
             "temperature": temperature,
@@ -335,3 +384,15 @@ class OpenAICompatibleChatProvider:
                 return joined
 
         raise ProviderError("Provider response content was not a string or text-part list.")
+
+    def _detect_phase(self, messages: Sequence[ChatMessage]) -> str | None:
+        if not messages:
+            return None
+        try:
+            payload = json.loads(messages[-1].content)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(payload, dict):
+            return None
+        phase = payload.get("phase")
+        return phase if isinstance(phase, str) else None

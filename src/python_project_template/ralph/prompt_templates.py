@@ -6,7 +6,13 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from python_project_template.ralph.models import ChatMessage, PromptArtifact, RalphTask, Requirement
+from python_project_template.ralph.models import (
+    ChatMessage,
+    ExecutionArtifact,
+    PromptArtifact,
+    RalphTask,
+    Requirement,
+)
 
 _RALPH_SYSTEM_PROMPT = """You are Ralph, an autonomous project-planning engine.
 Return JSON only with no markdown fences.
@@ -30,6 +36,17 @@ def _compact_artifact(artifact: PromptArtifact) -> dict[str, object]:
         "filename": artifact.filename,
         "success_criteria": artifact.success_criteria,
         "dependencies": artifact.dependencies,
+    }
+
+
+def _compact_execution_artifact(artifact: ExecutionArtifact) -> dict[str, object]:
+    return {
+        "task_id": artifact.task_id,
+        "title": artifact.title,
+        "summary": artifact.summary,
+        "changed_files": artifact.changed_files,
+        "tests_run": artifact.tests_run,
+        "notes": artifact.notes,
     }
 
 
@@ -188,6 +205,7 @@ def build_summarize_messages(
     requirements: list[Requirement],
     tasks: list[RalphTask],
     artifacts: list[PromptArtifact],
+    execution_artifacts: list[ExecutionArtifact],
     learnings: list[str],
 ) -> list[ChatMessage]:
     """Create the summarize phase prompt."""
@@ -198,12 +216,56 @@ def build_summarize_messages(
         "requirements": [requirement.to_dict() for requirement in requirements],
         "tasks": [task.to_dict() for task in tasks],
         "artifacts": [_compact_artifact(artifact) for artifact in artifacts],
+        "execution_artifacts": [
+            _compact_execution_artifact(artifact) for artifact in execution_artifacts
+        ],
         "learnings": learnings,
         "expected_schema": {
             "executive_summary": "string",
             "key_risks": ["string"],
             "implementation_sequence": ["TASK-1"],
             "handoff_notes": ["string"],
+        },
+    }
+    return [
+        ChatMessage(role="system", content=_RALPH_SYSTEM_PROMPT),
+        ChatMessage(role="user", content=_to_pretty_json(user_payload)),
+    ]
+
+
+def build_execute_messages(
+    *,
+    goal: str,
+    constraints: str | None,
+    task: RalphTask,
+    artifact: PromptArtifact,
+    completed_dependencies: list[ExecutionArtifact],
+    context_documents: list[dict[str, str]],
+) -> list[ChatMessage]:
+    """Create the task-execution prompt."""
+
+    user_payload = {
+        "phase": "implement",
+        "goal": goal,
+        "constraints": constraints or "",
+        "task": task.to_dict(),
+        "artifact": artifact.to_dict(),
+        "completed_dependencies": [
+            _compact_execution_artifact(execution) for execution in completed_dependencies
+        ],
+        "context_documents": context_documents,
+        "instruction": (
+            "Implement this task directly in the current repository. "
+            "Make concrete code changes, run focused validation where appropriate, "
+            "and return only the execution report JSON described below."
+        ),
+        "expected_schema": {
+            "task_id": task.id,
+            "title": task.title,
+            "summary": "string",
+            "changed_files": ["relative/path.py"],
+            "tests_run": ["command"],
+            "notes": ["string"],
         },
     }
     return [

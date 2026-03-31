@@ -25,7 +25,7 @@ from python_project_template.ralph.provider import (
 
 app = typer.Typer(
     name="ralph",
-    help="Autonomous Ralph loop CLI for project planning and prompt-pack generation.",
+    help="Autonomous Ralph loop CLI for project planning and in-repo task execution.",
     no_args_is_help=True,
 )
 
@@ -149,8 +149,15 @@ def run(
             help="Validate configuration and inputs without contacting the provider.",
         ),
     ] = False,
+    plan_only: Annotated[
+        bool,
+        typer.Option(
+            "--plan-only",
+            help="Stop after planning and prompt generation without modifying the repository.",
+        ),
+    ] = False,
 ) -> None:
-    """Run the Ralph planning loop and persist the generated prompt pack."""
+    """Run the Ralph planning loop and, by default, execute the generated tasks."""
     reset_config()
     context_files = context_file or []
     resolved_goal = _resolve_goal(goal)
@@ -173,6 +180,7 @@ def run(
         typer.echo(f"Output root: {config.output_dir}")
         typer.echo(f"Model: {config.model or '<auto>'}")
         typer.echo(f"Context files: {len(context_files)}")
+        typer.echo(f"Execution mode: {'plan-only' if plan_only else 'plan-and-execute'}")
         raise typer.Exit(0)
 
     app_config = get_config()
@@ -181,8 +189,16 @@ def run(
         level=app_config.log_level,
         json_format=app_config.log_format == "json",
     )
+    provider = build_provider(config)
+    if not plan_only and not provider.supports_task_execution():
+        typer.echo(
+            "Configuration error: Selected provider cannot execute implementation tasks. "
+            "Use the codex provider or rerun Ralph with --plan-only.",
+            err=True,
+        )
+        raise typer.Exit(2)
     engine = RalphEngine(
-        provider=build_provider(config),
+        provider=provider,
         config=config,
         logger=logger,
     )
@@ -191,6 +207,7 @@ def run(
             goal=resolved_goal,
             constraints=constraints,
             context_files=context_files,
+            execute_tasks=not plan_only,
         )
     except (
         IterationLimitError,
@@ -206,6 +223,7 @@ def run(
     typer.echo(f"Ralph loop completed: {session.output_dir}")
     typer.echo(f"Tasks: {len(session.tasks)}")
     typer.echo(f"Prompts: {len(session.prompt_artifacts)}")
+    typer.echo(f"Implemented Tasks: {len(session.execution_artifacts)}")
     typer.echo(f"Summary: {session.executive_summary}")
 
 
@@ -266,8 +284,16 @@ def resume(
         level=app_config.log_level,
         json_format=app_config.log_format == "json",
     )
+    provider = build_provider(config)
+    if not provider.supports_task_execution():
+        typer.echo(
+            "Configuration error: Selected provider cannot execute implementation tasks. "
+            "Use the codex provider to resume implementation work.",
+            err=True,
+        )
+        raise typer.Exit(2)
     engine = RalphEngine(
-        provider=build_provider(config),
+        provider=provider,
         config=config,
         logger=logger,
     )
@@ -286,6 +312,7 @@ def resume(
     typer.echo(f"Ralph loop resumed: {session.output_dir}")
     typer.echo(f"Tasks: {len(session.tasks)}")
     typer.echo(f"Prompts: {len(session.prompt_artifacts)}")
+    typer.echo(f"Implemented Tasks: {len(session.execution_artifacts)}")
     typer.echo(f"Summary: {session.executive_summary}")
 
 

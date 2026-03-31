@@ -10,6 +10,7 @@ from typer.testing import CliRunner
 from python_project_template import main as main_module
 from python_project_template.ralph.models import RalphSession, RalphTask, Requirement, TaskCriterion
 from tests.fakes import (
+    PlanningOnlyProvider,
     SequencedProvider,
     refinement_needed_responses,
     stuck_refinement_responses,
@@ -228,6 +229,47 @@ def test_cli_dry_run_defaults_to_codex_without_model(monkeypatch, tmp_path: Path
     assert result.exit_code == 0
     assert "Provider: codex" in result.output
     assert "Model: <auto>" in result.output
+    assert "Execution mode: plan-and-execute" in result.output
+
+
+def test_cli_run_supports_plan_only_with_non_executing_provider(
+    monkeypatch, tmp_path: Path
+) -> None:
+    _set_default_env(monkeypatch, tmp_path / "default-root")
+    monkeypatch.setattr(
+        main_module,
+        "build_provider",
+        lambda config: PlanningOnlyProvider(success_responses()),
+    )
+
+    result = runner.invoke(
+        main_module.app,
+        ["run", "--goal", "Plan a B2B dashboard", "--plan-only"],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0
+    assert "Implemented Tasks: 0" in result.output
+
+
+def test_cli_run_rejects_non_executing_provider_without_plan_only(
+    monkeypatch, tmp_path: Path
+) -> None:
+    _set_default_env(monkeypatch, tmp_path / "default-root")
+    monkeypatch.setattr(
+        main_module,
+        "build_provider",
+        lambda config: PlanningOnlyProvider(success_responses()),
+    )
+
+    result = runner.invoke(
+        main_module.app,
+        ["run", "--goal", "Plan a B2B dashboard"],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 2
+    assert "cannot execute implementation tasks" in result.output
 
 
 def test_cli_resume_continues_failed_session(monkeypatch, tmp_path: Path) -> None:
@@ -238,6 +280,7 @@ def test_cli_resume_continues_failed_session(monkeypatch, tmp_path: Path) -> Non
         lambda config: SequencedProvider(
             {
                 "prompt_pack": success_responses()["prompt_pack"],
+                "implement": success_responses()["implement"],
                 "summarize": success_responses()["summarize"],
             }
         ),

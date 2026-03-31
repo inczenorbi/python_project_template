@@ -21,6 +21,9 @@ class SequencedProvider:
         }
         self.calls: list[str] = []
 
+    def supports_task_execution(self) -> bool:
+        return True
+
     def complete(
         self,
         *,
@@ -35,6 +38,13 @@ class SequencedProvider:
         if not phase_responses:
             raise AssertionError(f"No fake response configured for phase {phase}.")
         return phase_responses.pop(0)
+
+
+class PlanningOnlyProvider(SequencedProvider):
+    """A fake provider that can plan but must not execute workspace changes."""
+
+    def supports_task_execution(self) -> bool:
+        return False
 
 
 def success_responses() -> dict[str, list[dict[str, Any] | str]]:
@@ -142,10 +152,28 @@ def success_responses() -> dict[str, list[dict[str, Any] | str]]:
                 "learnings": ["Prompt pack is ready for handoff."],
             }
         ],
+        "implement": [
+            {
+                "task_id": "TASK-1",
+                "title": "Implementation Prompt: Information Architecture",
+                "summary": "Added the information architecture deliverable to the repository.",
+                "changed_files": ["docs/information-architecture.md"],
+                "tests_run": ["pytest tests/test_architecture.py -q"],
+                "notes": ["Captured the core page and user-flow structure."],
+            },
+            {
+                "task_id": "TASK-2",
+                "title": "Implementation Prompt: Deployment Workflow",
+                "summary": "Documented the deployment workflow and release validation steps.",
+                "changed_files": ["docs/deployment-workflow.md"],
+                "tests_run": ["pytest tests/test_deployment.py -q"],
+                "notes": ["Aligned the release flow with the architecture artifacts."],
+            },
+        ],
         "summarize": [
             {
                 "executive_summary": (
-                    "The project is decomposed into two implementation-ready prompts."
+                    "The project is decomposed and executed through two implementation tasks."
                 ),
                 "key_risks": ["Release assumptions need validation in the target environment."],
                 "implementation_sequence": ["TASK-1", "TASK-2"],

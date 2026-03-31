@@ -1,8 +1,8 @@
 # Ralph Loop CLI
 
-`python_project_template` now provides a real Ralph loop CLI for turning a project brief into a reusable planning pack.
+`python_project_template` now provides a real Ralph loop CLI for turning a project brief into an executable implementation run.
 
-The CLI accepts a free-form goal, runs a multi-phase planning loop, and writes a complete prompt handoff to `outputs/ralph/<timestamp>-<slug>/` by default.
+The CLI accepts a free-form goal, runs a multi-phase planning loop, executes the resulting tasks through Codex by default, and writes a complete execution record to `outputs/ralph/<timestamp>-<slug>/`.
 
 ## What Ralph Produces
 
@@ -12,6 +12,7 @@ Each successful run creates:
 - `session.json` with the full structured session state
 - `backlog.json` with discovered requirements and atomic tasks
 - `prompts/*.md` with one implementation prompt per task
+- `executions/*.md` with one implementation report per executed task
 - `summary.md` with the final handoff summary
 - `event-log.jsonl` with phase-by-phase execution events
 
@@ -85,7 +86,7 @@ uv run ralph run --goal "Plan a SaaS analytics dashboard for small teams"
 Pipe a brief through stdin:
 
 ```bash
-echo "Plan a developer portal with docs, auth, and deployment prompts" | uv run ralph run
+echo "Build a developer portal with docs, auth, and deployment flow" | uv run ralph run
 ```
 
 Include extra context files:
@@ -94,7 +95,15 @@ Include extra context files:
 uv run ralph run \
   --goal "Plan a redesign for our internal admin tool" \
   --context-file docs/usage.md \
-  --constraints "Use reusable implementation prompts only"
+  --constraints "Prefer small, reviewable changes"
+```
+
+Generate the plan and prompts without modifying the repository:
+
+```bash
+uv run ralph run \
+  --goal "Plan a redesign for our internal admin tool" \
+  --plan-only
 ```
 
 Validate config without calling the provider:
@@ -121,6 +130,7 @@ uv run ralph diagnose
 - `--model` (optional override)
 - `--temperature`
 - `--dry-run`
+- `--plan-only`
 
 ## Ralph Loop Phases
 
@@ -130,7 +140,8 @@ The engine runs these phases:
 2. `decompose`
 3. `refine`
 4. `prompt_pack`
-5. `summarize`
+5. `implement`
+6. `summarize`
 
 The loop enforces these rules:
 
@@ -139,6 +150,9 @@ The loop enforces these rules:
 - dependencies must reference valid task ids
 - every requirement must be covered by at least one task
 - every task must receive a generated implementation prompt
+- Codex-backed runs execute tasks in workspace order unless `--plan-only` is set
+
+The `openai` provider remains planning-only. Use `--plan-only` when you want a handoff pack without repository edits.
 
 ## Development
 

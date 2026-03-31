@@ -15,7 +15,7 @@ uv run ralph run \
   --goal "Plan a customer portal for account management" \
   --context-file README.md \
   --context-file docs/usage.md \
-  --constraints "Return reusable prompts, not code"
+  --constraints "Prefer small, reviewable changes"
 ```
 
 From stdin:
@@ -58,6 +58,12 @@ RALPH_MODEL=your-model
 
 Use `uv run ralph diagnose` to confirm the resolved configuration.
 
+If you want planning and prompt generation without repository edits, add `--plan-only`:
+
+```bash
+uv run ralph run --goal "Plan a reporting portal" --plan-only
+```
+
 ## Output Structure
 
 Each run creates a timestamped session directory:
@@ -77,6 +83,9 @@ event-log.jsonl
 prompts/
   01-define-information-architecture.md
   02-draft-deployment-workflow.md
+executions/
+  01-define-information-architecture-execution.md
+  02-draft-deployment-workflow-execution.md
 ```
 
 ## Phase Behavior
@@ -87,7 +96,8 @@ Ralph always runs these phases in order:
 2. `decompose` creates an initial atomic task backlog.
 3. `refine` loops until every requirement is covered and the task list passes validation.
 4. `prompt_pack` creates one implementation prompt per task.
-5. `summarize` writes the handoff summary and implementation order.
+5. `implement` executes each task in repository order and writes an execution report.
+6. `summarize` writes the final summary and implementation order.
 
 ## Dry Run
 

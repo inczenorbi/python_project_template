@@ -100,6 +100,47 @@ def test_codex_provider_decodes_non_utf_console_bytes_with_replacement(tmp_path)
     assert "decode-problem" in str(exc_info.value)
 
 
+def test_codex_provider_uses_workspace_write_for_implementation_phase(tmp_path) -> None:
+    captured: dict[str, Any] = {}
+
+    def run_fn(command, **kwargs):
+        captured["command"] = command
+        output_path = command[command.index("-o") + 1]
+        payload = {
+            "task_id": "TASK-1",
+            "title": "Implement task",
+            "summary": "done",
+            "changed_files": [],
+            "tests_run": [],
+            "notes": [],
+        }
+        Path(output_path).write_text(
+            json.dumps(payload),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
+
+    provider = CodexCliProvider(
+        codex_command="codex",
+        working_dir=tmp_path,
+        timeout_seconds=30,
+        run_fn=run_fn,
+    )
+
+    response = provider.complete(
+        messages=[
+            ChatMessage(role="system", content="system rule"),
+            ChatMessage(role="user", content='{"phase":"implement","task":{"id":"TASK-1"}}'),
+        ],
+        model=None,
+        temperature=0.0,
+    )
+
+    assert '"summary": "done"' in response
+    assert captured["command"][captured["command"].index("--sandbox") + 1] == "workspace-write"
+    assert "--ephemeral" in captured["command"]
+
+
 def test_provider_builds_request_payload() -> None:
     captured: dict[str, Any] = {}
 

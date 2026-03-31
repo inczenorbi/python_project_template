@@ -3,6 +3,7 @@
 from python_project_template.ralph.config import RalphConfig
 from python_project_template.ralph.engine import RalphEngine
 from python_project_template.ralph.models import (
+    ExecutionArtifact,
     PromptArtifact,
     RalphSession,
     RalphTask,
@@ -18,6 +19,7 @@ from python_project_template.ralph.provider import (
 __all__ = [
     "ChatProvider",
     "CodexCliProvider",
+    "ExecutionArtifact",
     "OpenAICompatibleChatProvider",
     "PromptArtifact",
     "RalphConfig",
