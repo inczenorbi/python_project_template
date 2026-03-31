@@ -173,6 +173,42 @@ class PromptArtifact:
 
 
 @dataclass(slots=True)
+class ExecutionArtifact:
+    """A persisted implementation report for an executed task."""
+
+    task_id: str
+    title: str
+    filename: str
+    summary: str
+    changed_files: list[str] = field(default_factory=list)
+    tests_run: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "task_id": self.task_id,
+            "title": self.title,
+            "filename": self.filename,
+            "summary": self.summary,
+            "changed_files": list(self.changed_files),
+            "tests_run": list(self.tests_run),
+            "notes": list(self.notes),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> ExecutionArtifact:
+        return cls(
+            task_id=str(payload["task_id"]),
+            title=str(payload["title"]),
+            filename=str(payload.get("filename", "")),
+            summary=str(payload["summary"]),
+            changed_files=_string_list(payload.get("changed_files")),
+            tests_run=_string_list(payload.get("tests_run")),
+            notes=_string_list(payload.get("notes")),
+        )
+
+
+@dataclass(slots=True)
 class RalphSession:
     """Execution state and persisted results for a Ralph run."""
 
@@ -194,6 +230,7 @@ class RalphSession:
     requirements: list[Requirement] = field(default_factory=list)
     tasks: list[RalphTask] = field(default_factory=list)
     prompt_artifacts: list[PromptArtifact] = field(default_factory=list)
+    execution_artifacts: list[ExecutionArtifact] = field(default_factory=list)
     learnings: list[str] = field(default_factory=list)
     execution_order: list[str] = field(default_factory=list)
     executive_summary: str = ""
@@ -223,6 +260,7 @@ class RalphSession:
             "requirements": [requirement.to_dict() for requirement in self.requirements],
             "tasks": [task.to_dict() for task in self.tasks],
             "prompt_artifacts": [artifact.to_dict() for artifact in self.prompt_artifacts],
+            "execution_artifacts": [artifact.to_dict() for artifact in self.execution_artifacts],
             "learnings": list(self.learnings),
             "execution_order": list(self.execution_order),
             "executive_summary": self.executive_summary,
@@ -256,6 +294,10 @@ class RalphSession:
             prompt_artifacts=[
                 PromptArtifact.from_dict(item)
                 for item in _dict_list(payload.get("prompt_artifacts"))
+            ],
+            execution_artifacts=[
+                ExecutionArtifact.from_dict(item)
+                for item in _dict_list(payload.get("execution_artifacts"))
             ],
             learnings=_string_list(payload.get("learnings")),
             execution_order=_string_list(payload.get("execution_order")),

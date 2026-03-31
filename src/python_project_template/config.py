@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import shutil
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -35,6 +37,64 @@ def _parse_int(value: str, *, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _iter_codex_install_candidates(command_name: str) -> Iterator[Path]:
+    """Yield likely Codex CLI install paths from VS Code extension directories."""
+
+    executable_names = [command_name]
+    if os.name == "nt" and not command_name.lower().endswith(".exe"):
+        executable_names.insert(0, f"{command_name}.exe")
+
+    roots = [
+        Path.home() / ".vscode" / "extensions",
+        Path.home() / ".vscode-insiders" / "extensions",
+    ]
+    for root in roots:
+        if not root.exists():
+            continue
+        extension_dirs = sorted(
+            root.glob("openai.chatgpt-*"),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        for extension_dir in extension_dirs:
+            bin_dir = extension_dir / "bin"
+            if not bin_dir.exists():
+                continue
+            for executable_name in executable_names:
+                for candidate in bin_dir.rglob(executable_name):
+                    if candidate.is_file():
+                        yield candidate
+
+
+def _resolve_codex_command(value: str) -> str:
+    """Resolve the codex command, recovering from stale absolute executable paths."""
+
+    candidate = value.strip() or "codex"
+    resolved = shutil.which(candidate)
+    if resolved:
+        return resolved
+
+    candidate_path = Path(candidate)
+    if candidate_path.exists():
+        return str(candidate_path)
+
+    if candidate_path.is_absolute():
+        fallback = shutil.which(candidate_path.name)
+        if fallback:
+            return fallback
+        discovered = next(_iter_codex_install_candidates(candidate_path.name), None)
+        if discovered is not None:
+            return str(discovered)
+        return candidate
+
+    if len(candidate_path.parts) == 1:
+        discovered = next(_iter_codex_install_candidates(candidate_path.name), None)
+        if discovered is not None:
+            return str(discovered)
+
+    return candidate
 
 
 @dataclass
@@ -70,7 +130,9 @@ class AppConfig:
             log_format=env_vars.get("LOG_FORMAT", "plain").lower(),
             environment=env_vars.get("ENVIRONMENT", "dev").lower(),
             ralph_provider=env_vars.get("RALPH_PROVIDER", "codex").lower(),
-            ralph_codex_command=env_vars.get("RALPH_CODEX_COMMAND", "codex").strip() or "codex",
+            ralph_codex_command=_resolve_codex_command(
+                env_vars.get("RALPH_CODEX_COMMAND", "codex")
+            ),
             ralph_codex_oss=_parse_bool(env_vars.get("RALPH_CODEX_OSS", ""), default=False)
             or bool(codex_local_provider),
             ralph_codex_local_provider=codex_local_provider,
