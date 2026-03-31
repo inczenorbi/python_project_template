@@ -6,7 +6,11 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "typer>=0.12.0",
+    "httpx>=0.28.0",
 ]
+
+[project.scripts]
+ralph = "python_project_template.main:main"
 
 [project.optional-dependencies]
 dev = [
@@ -32,6 +36,7 @@ dev = [
 lint = [
     "ruff>=0.13.2",
     "bandit[toml]>=1.7.8",
+    "docformatter>=1.7.7",
 ]
 test = [
     "pytest>=8.4.2",

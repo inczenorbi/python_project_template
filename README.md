@@ -1,196 +1,169 @@
-# Python Project Template
+# Ralph Loop CLI
 
-Overengineered Python project template with modern tooling, reproducible installs, and production-ready CI/CD.
+`python_project_template` now provides a real Ralph loop CLI for turning a project brief into a reusable planning pack.
 
-**This is a GitHub template repository.** Use it as a foundation for your own Python projects. See [Using This Template](#using-this-template) below to get started.
+The CLI accepts a free-form goal, runs a multi-phase planning loop, and writes a complete prompt handoff to `outputs/ralph/<timestamp>-<slug>/` by default.
 
-## Using This Template
+## What Ralph Produces
 
-### Option 1: Create a New Repository from This Template (Recommended)
+Each successful run creates:
 
-1. Click **"Use this template"** button on GitHub (top-right of the repo page)
-2. Choose a name for your new repository
-3. Clone your new repository:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/YOUR_PROJECT_NAME
-   cd YOUR_PROJECT_NAME
-   ```
-4. Follow the **Customization Steps** below
+- `brief.md` with the original goal, constraints, and context files
+- `session.json` with the full structured session state
+- `backlog.json` with discovered requirements and atomic tasks
+- `prompts/*.md` with one implementation prompt per task
+- `summary.md` with the final handoff summary
+- `event-log.jsonl` with phase-by-phase execution events
 
-### Option 2: Clone and Adapt
-
-```bash
-git clone https://github.com/yourorg/python-project-template.git my-project
-cd my-project
-git remote set-url origin https://github.com/YOUR_USERNAME/YOUR_PROJECT_NAME
-```
-
-### Customization Steps
-
-1. **Update project metadata** in `pyproject.toml`:
-   ```toml
-   [project]
-   name = "my-project"                  # Change this
-   description = "What your project does"  # Change this
-   # Add your name/email under [project]
-   ```
-
-2. **Delete example code** (marked with `# [TEMPLATE] Delete this` comments):
-   ```bash
-   rm src/my_project/utils/basic_ops.py
-   rm tests/test_basic_ops.py
-   ```
-   Then update `src/my_project/main.py` with your own CLI or remove it entirely if you don't need a CLI.
-
-3. **Update Python package name** in code:
-   - Rename `src/python_project_template/` to `src/your_project_name/`
-   - Update all imports throughout the codebase
-
-4. **Set up your development environment**:
-   ```bash
-   make install
-   make precommit
-   ```
-
-5. **Remove or adapt example workflows** in `.github/workflows/`:
-   - The `release.yml` workflow assumes PyPI publishing. Delete or modify if not needed.
-   - Otherwise, workflows will run on every push.
-
-6. **Update CI for your team**:
-   - Modify `.github/workflows/lint-test.yml` if you need different Python versions or OS targets
-   - Configure branch protection rules in GitHub (Settings → Branches)
-
-7. **Customize documentation**:
-   - Update `README.md` with your project's purpose and usage
-   - Update `docs/` with your own guides and documentation
-   - Update `CONTRIBUTING.md` with your team's guidelines
-
-8. **Initialize git history** (optional, to start fresh):
-   ```bash
-   rm -rf .git
-   git init
-   git add .
-   git commit -m "Initial commit from python-project-template"
-   ```
+If the loop fails, the same directory still contains the partial artifacts plus the failure reason.
 
 ## Requirements
-- Python 3.11+ (see `.python-version`)
-- uv (https://github.com/astral-sh/uv)
 
-## Quick start (uv, lockfile first)
+- Python 3.11+
+- `uv`
+- Codex CLI installed and logged in
+
+Optional:
+
+- OpenAI-compatible API credentials if you explicitly switch to the `openai` provider
+
+## Install
 
 ```bash
 uv venv
 uv sync --all-groups
-uv run -m pytest
 ```
 
-If you prefer pip-style editable installs (less lockfile focused):
+If you prefer editable installs:
 
 ```bash
 uv pip install -e ".[dev]"
 ```
 
-## uv workflow (recommended)
+## Configure Ralph
 
-- Add dependencies: `uv add requests`, `uv add --dev pytest`, or `uv add --group test pytest`.
-- Remove dependencies: `uv remove requests`.
-- Update the lockfile: `uv lock`.
-- Upgrade all locked deps: `uv lock -U`.
-- Upgrade a single package: `uv lock -P requests`.
-- Sync the environment: `uv sync`.
-- Validate lockfile is current: `uv lock --check`.
-- Inspect the tree: `uv tree`.
+Copy `.env.example` to `.env`.
 
-## Dependency groups vs extras
-
-This repo supports both patterns:
-
-- Extras in `[project.optional-dependencies]`:
-  - Install with `uv pip install -e ".[dev]"` or `uv sync --extra dev`.
-- Dependency groups in `[dependency-groups]`:
-  - Install with `uv sync --group dev` or `uv sync --all-groups`.
-
-Pick one approach per team and stick with it. For uv-native workflows, groups are recommended.
-
-## Running tools and scripts
-
-- Run project commands in the env: `uv run -m pytest`, `uv run python -m python_project_template.main`.
-- Run tools in isolated envs: `uv tool run ruff check .` (or `uvx ruff check .`).
-- Install tools globally: `uv tool install ruff`.
-
-Note: `uvx` is a shortcut for `uv tool run`.
-
-## Development Setup
-
-### Quick setup
+Default setup uses Codex CLI with your existing Codex/ChatGPT login:
 
 ```bash
-# Install the package and all dev dependencies
+RALPH_PROVIDER=codex
+RALPH_CODEX_COMMAND=codex
+RALPH_CODEX_OSS=0
+RALPH_CODEX_LOCAL_PROVIDER=
+RALPH_MODEL=
+RALPH_TIMEOUT_SECONDS=300
+RALPH_MAX_ITERATIONS=3
+RALPH_OUTPUT_DIR=outputs/ralph
+```
+
+To run against a local model through Codex CLI, enable OSS mode:
+
+```bash
+RALPH_PROVIDER=codex
+RALPH_CODEX_OSS=1
+RALPH_CODEX_LOCAL_PROVIDER=ollama
+```
+
+To use the old direct API backend explicitly:
+
+```bash
+RALPH_PROVIDER=openai
+RALPH_API_BASE_URL=https://api.openai.com/v1
+RALPH_API_KEY=your-api-key
+RALPH_MODEL=your-model
+```
+
+## Quick Start
+
+Run Ralph with a direct goal:
+
+```bash
+uv run ralph run --goal "Plan a SaaS analytics dashboard for small teams"
+```
+
+Pipe a brief through stdin:
+
+```bash
+echo "Plan a developer portal with docs, auth, and deployment prompts" | uv run ralph run
+```
+
+Include extra context files:
+
+```bash
+uv run ralph run \
+  --goal "Plan a redesign for our internal admin tool" \
+  --context-file docs/usage.md \
+  --constraints "Use reusable implementation prompts only"
+```
+
+Validate config without calling the provider:
+
+```bash
+uv run ralph run --goal "Plan a support dashboard" --dry-run
+```
+
+Inspect resolved config:
+
+```bash
+uv run ralph diagnose
+```
+
+## CLI Options
+
+`ralph run` supports:
+
+- `--goal`
+- `--context-file` (repeatable)
+- `--constraints`
+- `--output-dir`
+- `--max-iterations`
+- `--model` (optional override)
+- `--temperature`
+- `--dry-run`
+
+## Ralph Loop Phases
+
+The engine runs these phases:
+
+1. `discover`
+2. `decompose`
+3. `refine`
+4. `prompt_pack`
+5. `summarize`
+
+The loop enforces these rules:
+
+- tasks must be atomic
+- each task must have explicit pass/fail criteria
+- dependencies must reference valid task ids
+- every requirement must be covered by at least one task
+- every task must receive a generated implementation prompt
+
+## Development
+
+Useful commands:
+
+```bash
 make install
-
-# Set up git hooks for CI enforcement
-make precommit
+make test
+make type-check
+make lint
+make ralph-help
 ```
 
-### Virtual environment management
-
-- Create a venv: `uv venv`
-- Activate on macOS/Linux: `source .venv/bin/activate`
-- Activate on Windows: `.venv\Scripts\Activate.ps1` (PowerShell)
-- Sync dependencies: `uv sync --all-groups`
-- Install tools globally: `uv tool install ruff` (one-time)
-
-## Testing
-
-### Run tests
+Baseline validation:
 
 ```bash
-make test          # Run pytest
-make cov           # Run pytest with coverage report (generates htmlcov/)
-open htmlcov/index.html  # View coverage report
+make check
 ```
 
-### Coverage requirements
+## Project Layout
 
-- Minimum coverage threshold: 80%
-- Coverage is enforced in CI/CD pipelines before merge
-- View branch coverage: `make cov` → open `htmlcov/index.html`
+Core runtime code lives in:
 
-### Type checking
+- `src/python_project_template/main.py`
+- `src/python_project_template/config.py`
+- `src/python_project_template/ralph/`
 
-```bash
-make type-check    # Run ty on src/ and tests/
-```
-
-- Ty config: `pyproject.toml [tool.ty]`
-- Ignores are documented inline in source files
-
-## Quality Gates
-
-### Local validation (before git push)
-
-```bash
-make check         # Runs lint + type-check + test (comprehensive check)
-```
-
-### Pre-commit hooks
-
-Run automatically on commit:
-- Ruff lint + format
-- Ruff import sorting
-
-Disable temporarily: `git commit --no-verify`
-
-## Makefile shortcuts
-
-```bash
-make install       # Install package + dev deps
-make lint          # Run ruff linter
-make format        # Run ruff formatter + docformatter
-make test          # Run pytest
-make type-check    # Run ty
-make cov           # Run pytest with coverage
-make check         # Comprehensive validation (lint + type + test)
-make clean         # Remove build/test artifacts
-```
+Tests live in `tests/`.

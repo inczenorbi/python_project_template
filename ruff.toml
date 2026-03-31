@@ -13,4 +13,6 @@ select = [
     "ISC", # implicit string concat
     "RUF", # ruff-specific rules
 ]
-ignore = []
+ignore = [
+    "ISC001", # Conflicts with the formatter; Ruff recommends disabling it when format is enabled.
+]

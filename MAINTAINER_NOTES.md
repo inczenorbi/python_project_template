@@ -1,126 +1,92 @@
-# Python Project Template - Maintainer Notes
+# Ralph Loop CLI - Maintainer Notes
 
-This is an overengineered GitHub template repository for Python projects. Users download it and customize it as a base for their own projects.
+This repository now ships a real CLI for autonomous project planning and prompt-pack generation.
 
-## What This Template Provides
+## What the Repo Provides
 
-- Modern Python setup:
-  - Reproducible installs via `uv` and a lockfile
-  - `src/`-layout project structure
-  - Type hints enforced with `ty`
-  - Comprehensive testing with pytest
-  - 80%+ coverage enforcement
-- Production-ready infrastructure:
-  - Type checking with `ty`
-  - Code linting and formatting with Ruff
-  - Security scanning with Bandit
-  - Structured logging (JSON and plain text)
-  - Configuration management (env/.env/defaults)
-  - Pre-commit hooks
-- CI/CD automation:
-  - GitHub Actions workflows for lint, type-check, test, docs, and release
-  - Multi-platform testing (Linux, Windows, macOS)
-  - Multi-version testing (Python 3.11, 3.12, 3.13)
-  - Coverage reporting
-- Professional documentation:
-  - README with quick start and template guidance
-  - Architecture overview and design decisions (ADRs)
-  - Contributing guidelines with development workflow
-  - Customization checklist in `TEMPLATE_TODO.md`
-  - MkDocs setup for documentation sites
+- A Typer-based `ralph` CLI
+- Env-driven runtime config in `src/python_project_template/config.py`
+- A provider-neutral Ralph engine in `src/python_project_template/ralph/`
+- A default Codex CLI backend for ChatGPT/Codex login or local OSS models
+- One OpenAI-compatible HTTP adapter backed by `httpx`
+- Tests for CLI behavior, engine validation, and provider transport
 
-## Important: This Is Not a Library or CLI Tool
+## Core Behavior
 
-This template includes example code (config, logging, CLI, utilities) to demonstrate how to structure a project. When users download this template, they should:
+`ralph run` turns a brief into a persisted session under `outputs/ralph/` by default.
 
-1. Rename their package
-2. Delete or adapt the example code
-3. Add their own business logic
+Each run executes these phases:
 
-The template is not meant to be used directly. It is a starting point.
+1. `discover`
+2. `decompose`
+3. `refine`
+4. `prompt_pack`
+5. `summarize`
 
-## Key Files for Template Users
+The engine enforces:
+
+- atomic tasks
+- explicit pass/fail criteria
+- valid task dependencies
+- full requirement coverage
+- one prompt artifact per task
+
+## Key Files
 
 | File | Purpose |
 |------|---------|
-| `TEMPLATE_TODO.md` | Step-by-step customization checklist |
-| `README.md` | Template overview and quick start |
-| `CONTRIBUTING.md` | Development and release workflow |
-| `docs/architecture.md` | System design reference |
-| `docs/adr/` | Architecture Decision Record examples |
+| `src/python_project_template/main.py` | CLI entrypoint |
+| `src/python_project_template/config.py` | Env and `.env` config loader |
+| `src/python_project_template/ralph/engine.py` | Loop orchestration and persistence |
+| `src/python_project_template/ralph/provider.py` | OpenAI-compatible adapter |
+| `tests/test_cli.py` | CLI behavior coverage |
+| `tests/test_engine.py` | Loop and artifact persistence coverage |
+| `tests/test_provider.py` | Transport adapter coverage |
 
-## No CLI Entry Point
+## Session Outputs
 
-The `--cli-entry-point` was intentionally removed from `pyproject.toml` because:
+Each Ralph run writes:
 
-- Template users should not accidentally publish a generic CLI tool
-- Example CLI code is marked for deletion
-- Users should define their own entry points
+- `brief.md`
+- `session.json`
+- `backlog.json`
+- `summary.md`
+- `event-log.jsonl`
+- `prompts/*.md`
 
-## Example Code Is Marked for Deletion
+Failed runs should still leave partial artifacts behind.
 
-All example code includes `[TEMPLATE]` comments:
+## Provider Expectations
 
-- `src/python_project_template/utils/basic_ops.py` - Example utility class
-- `src/python_project_template/main.py` - Example CLI using Typer
-- `tests/test_basic_ops.py` - Example tests
+The default backend is Codex CLI.
 
-Users should delete or adapt these files to fit their own project.
+Primary env vars:
 
-## For Future Maintenance
+- `RALPH_PROVIDER=codex`
+- `RALPH_CODEX_COMMAND`
+- `RALPH_CODEX_OSS`
+- `RALPH_CODEX_LOCAL_PROVIDER`
 
-### If Updating the Template
+Optional shared env vars:
 
-1. Keep the same overengineered principles (type safety, testing, CI/CD)
-2. Update docs to clarify template-specific guidance
-3. Mark any example code clearly with `[TEMPLATE]` comments
-4. Run `make check` to verify all quality gates pass
-5. Test that `TEMPLATE_TODO.md` is still accurate
+- `RALPH_MODEL`
+- `RALPH_TIMEOUT_SECONDS`
+- `RALPH_MAX_ITERATIONS`
+- `RALPH_OUTPUT_DIR`
 
-### Releasing Template Updates
+OpenAI HTTP remains an explicit fallback:
 
-This template itself does not need semantic versioning or PyPI releases because it is a GitHub template. Fix bugs and push to `main`; template users always get the latest `main` branch.
+- `RALPH_PROVIDER=openai`
+- `RALPH_API_BASE_URL`
+- `RALPH_API_KEY`
+- `RALPH_MODEL`
 
-### Testing the Template
+## Maintenance Checklist
 
-To verify users can customize this:
+When changing the Ralph flow:
 
-1. Create a test repo from the template
-2. Follow the `TEMPLATE_TODO.md` steps
-3. Run `make check` and verify it passes
-4. Confirm that deleting the example code does not break workflows
-
-## CI/CD Workflows Included
-
-| Workflow | File | Runs On |
-|----------|------|---------|
-| Lint and type check | `.github/workflows/lint-test.yml` | Push + PR |
-| Multi-version tests | `.github/workflows/lint-test.yml` | Push + PR |
-| Coverage report | `.github/workflows/lint-test.yml` | Push + PR |
-| Docs build | `.github/workflows/docs-build.yml` | Push + PR |
-| Release (optional) | `.github/workflows/release.yml` | Git tags |
-
-Users can disable the release workflow if they do not publish to PyPI or GitHub Releases.
-
-## Common Template Pitfalls for Users
-
-Users might:
-
-1. Try to use this as a library or CLI tool directly.
-   Solution: Point them to the "Using This Template" section in `README.md`.
-2. Forget to rename the package and end up with `python_project_template` everywhere.
-   Solution: Step 1 in `TEMPLATE_TODO.md` covers this.
-3. Leave example code in place and wonder why coverage is low.
-   Solution: Step 2 in `TEMPLATE_TODO.md` explains what the example code is.
-4. Forget to update CI/CD workflows for their Python versions.
-   Solution: Step 5 in `TEMPLATE_TODO.md` covers CI/CD customization.
-
-## Summary
-
-This is a professional, overengineered GitHub template that provides:
-
-- Best practices for Python project structure
-- Production-ready tooling and automation
-- Clear guidance for users to customize it
-
-Users download it, follow `TEMPLATE_TODO.md`, and build their own projects on top.
+1. Keep phase outputs JSON-only and validation-driven.
+2. Preserve artifact persistence on failure.
+3. Update README and `docs/usage.md` when CLI flags or output files change.
+4. Keep `tests/` aligned with prompt schemas and validation rules.
+5. Run `make test` and `make type-check`.

@@ -1,4 +1,7 @@
-.PHONY: help install precommit lint format test type-check cov check clean version docs docs-serve
+.PHONY: help install precommit lint format test type-check cov check clean version docs docs-serve ralph-help
+
+UV = uv --cache-dir .uv-cache
+UV_TOOL = $(UV) tool run
 
 help:
 	@echo "Common targets:"
@@ -12,38 +15,39 @@ help:
 	@echo " check - Lint + type-check + tests"
 	@echo " docs - Build MkDocs documentation (generates site/)"
 	@echo " docs-serve - Serve MkDocs locally (http://127.0.0.1:8000)"
+	@echo " ralph-help - Show Ralph CLI help"
 	@echo " version - Show current version"
 	@echo " clean - Remove build/test artifacts"
 
 
 install:
-	uv pip install -e .[dev]
-	uvx pre-commit install
+	$(UV) sync --all-groups
+	$(UV_TOOL) pre-commit install
 
 
 precommit:
-	uvx pre-commit run --all-files
+	$(UV_TOOL) pre-commit run --all-files
 
 
 lint:
-	uvx ruff check .
+	$(UV) run ruff check .
 
 
 format:
-	uvx ruff format .
-	uvx docformatter --in-place --recursive src tests
+	$(UV) run ruff format .
+	$(UV) run docformatter --in-place --recursive src tests
 
 
 test:
-	uv run -m pytest
+	$(UV) run -m pytest
 
 
 type-check:
-	uv run ty check src tests
+	$(UV) run ty check src tests
 
 
 cov:
-	uv run -m pytest --cov=src/python_project_template --cov-report=term-missing --cov-report=html
+	$(UV) run -m pytest --cov=src/python_project_template --cov-report=term-missing --cov-report=html
 	@echo "Coverage HTML report generated: htmlcov/index.html"
 
 
@@ -59,12 +63,16 @@ docs-serve:
 	cd docs && mkdocs serve
 
 
+ralph-help:
+	@$(UV) run ralph --help
+
+
 version:
-	@uv run python -c "from python_project_template import __version__; print(__version__)"
+	@$(UV) run python -c "from python_project_template import __version__; print(__version__)"
 
 
 clean:
-	uv run python -c "import shutil, os, sys; \
+	$(UV) run python -c "import shutil, os, sys; \
 	[shutil.rmtree(p, ignore_errors=True) for p in ['.pytest_cache','.ruff_cache','htmlcov','build','dist','site']]; \
 	[os.remove(f) for f in ['.coverage'] if os.path.exists(f)]; \
 	[shutil.rmtree(os.path.join(root, d), ignore_errors=True) for root, dirs, files in os.walk('.') for d in dirs if d == '__pycache__']"
